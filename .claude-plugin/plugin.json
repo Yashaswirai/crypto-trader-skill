@@ -1,0 +1,22 @@
+{
+  "name": "crypto-trader-skill",
+  "version": "1.0.0",
+  "description": "11 modular AI assistant skills for cryptocurrency market analysis, whale tracking, position sizing, and risk management.",
+  "author": {
+    "name": "Crypto Trader Skill Contributors"
+  },
+  "license": "MIT",
+  "skills": [
+    "./crypto-scanner",
+    "./crypto-news",
+    "./crypto-entry",
+    "./crypto-exit",
+    "./crypto-timemachine",
+    "./crypto-budget",
+    "./crypto-risk",
+    "./crypto-broker",
+    "./crypto-alerts",
+    "./crypto-analyst",
+    "./crypto-whale"
+  ]
+}

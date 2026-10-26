@@ -1,0 +1,8 @@
+{
+  "name": "crypto-trader-skill",
+  "displayName": "Crypto Trader Skill",
+  "version": "1.0.0",
+  "description": "11 modular skills for cryptocurrency day trading: 24/7 chart scanning, Fear & Greed sentiment, whale flow tracking, fractional position sizing, and risk enforcement.",
+  "category": "Trading & Finance",
+  "tags": ["crypto", "bitcoin", "ethereum", "trading", "risk-management", "whale-tracking", "binance"]
+}
