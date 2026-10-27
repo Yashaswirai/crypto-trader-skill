@@ -16,21 +16,23 @@ volatility windows that replace it:
 - Asian, London, and New York market opens
 - 8-hour perpetual funding rate settlement boundaries (00:00, 08:00, 16:00 UTC)
 
+`${CLAUDE_SKILL_DIR}` below is this skill's folder (where this SKILL.md lives).
+
 ```bash
 # Check status of active trade plan
-python3 crypto-alerts/alerts.py plan
+python3 "${CLAUDE_SKILL_DIR}/alerts.py" plan
 
 # Get real-time price & update cache
-python3 crypto-alerts/alerts.py check BTCUSDT
+python3 "${CLAUDE_SKILL_DIR}/alerts.py" check BTCUSDT
 
 # Price threshold alert
-python3 crypto-alerts/alerts.py alert ETHUSDT --above 3300.00
+python3 "${CLAUDE_SKILL_DIR}/alerts.py" alert ETHUSDT --above 3300.00
 
 # View countdown to next funding rate settlement
-python3 crypto-alerts/alerts.py funding
+python3 "${CLAUDE_SKILL_DIR}/alerts.py" funding
 
 # View global trading session clocks
-python3 crypto-alerts/alerts.py sessions
+python3 "${CLAUDE_SKILL_DIR}/alerts.py" sessions
 ```
 
 Outputs:

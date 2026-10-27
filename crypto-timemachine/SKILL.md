@@ -15,13 +15,15 @@ Instead of relying on gut feel, it samples the token's actual recent volatility
 and 5-minute return distribution across 10,000 simulated sessions to see how
 frequently the target is reached before the stop loss.
 
+`${CLAUDE_SKILL_DIR}` below is this skill's folder (where this SKILL.md lives).
+
 ```bash
 # Replay active plan in crypto-trader/plan.json
-python3 crypto-timemachine/timemachine.py run
+python3 "${CLAUDE_SKILL_DIR}/timemachine.py" run
 
 # Replay with 20,000 simulations
-python3 crypto-timemachine/timemachine.py run --simulations 20000
+python3 "${CLAUDE_SKILL_DIR}/timemachine.py" run --simulations 20000
 
 # Replay arbitrary coordinates
-python3 crypto-timemachine/timemachine.py run --symbol ETHUSDT --entry 3200 --stop 3140 --target 3320
+python3 "${CLAUDE_SKILL_DIR}/timemachine.py" run --symbol ETHUSDT --entry 3200 --stop 3140 --target 3320
 ```

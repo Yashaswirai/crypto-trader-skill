@@ -14,18 +14,20 @@ The Crypto Scanner is the discovery engine of the crypto trading workflow.
 It reads 24/7 cryptocurrency market data from free public endpoints and identifies
 trading pairs matching explicit mathematical criteria.
 
+`${CLAUDE_SKILL_DIR}` below is this skill's folder (where this SKILL.md lives).
+
 ```bash
 # Discover top liquid USDT crypto pairs
-python3 crypto-scanner/scan.py universe --min-volume 10000000
+python3 "${CLAUDE_SKILL_DIR}/scan.py" universe --min-volume 10000000
 
 # Run 24-hour setup scan (breakouts, flags, surges)
-python3 crypto-scanner/scan.py daily
+python3 "${CLAUDE_SKILL_DIR}/scan.py" daily
 
 # Scan specific focus coins
-python3 crypto-scanner/scan.py daily --symbols BTCUSDT,ETHUSDT,SOLUSDT
+python3 "${CLAUDE_SKILL_DIR}/scan.py" daily --symbols BTCUSDT,ETHUSDT,SOLUSDT
 
 # Scan for London session range breakouts from the Asian range
-python3 crypto-scanner/scan.py session --session london
+python3 "${CLAUDE_SKILL_DIR}/scan.py" session --session london
 ```
 
 Outputs:

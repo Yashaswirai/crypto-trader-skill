@@ -1,22 +1,63 @@
-# The Crypto Trader Skill Suite
+# The Crypto Trader skill
 
-11 modular AI assistant skills engineered specifically for cryptocurrency markets: scan thousands of 24/7 crypto charts, track macro market sentiment, monitor institutional whale tape flow, time high-volume breakouts, and replay every setup through 10,000 Monte Carlo bootstrap simulations before risking capital.
+11 Claude skills for crypto day trading: scan thousands of charts, track breaking sentiment, time every entry and exit, and replay every outcome before you risk a dollar.
 
-**Free, MIT, no signup, zero API keys required.**
-The tools use standard library Python (3.8+) that connects to free, public, rate-limit friendly endpoints:
-- **Binance Public REST** (24/7 candles, tickers, order book depth)
-- **Alternative.me** (Crypto Fear & Greed sentiment index)
-- **Bybit & Binance Futures** (Perpetual funding rates & open interest)
-- **CoinGecko & CoinCap** (Circulating supply, FDV, market cap rankings)
+Free, MIT, no signup, zero API keys required. The tools are plain Python standard library that connect to free public endpoints: Binance public REST (24/7 candles, tickers, order book depth), Alternative.me (Crypto Fear & Greed Index), and CoinGecko (circulating supply, FDV).
 
-Human-in-the-loop safety is enforced across the entire pipeline:
-- Paper trading simulation is active by default.
-- Orders must pass strict risk checks (max loss per trade, daily loss limit, reward:risk, leverage ceiling).
-- The broker executor **never** executes a trade without your explicit confirmation.
+One scans thousands of 24/7 charts for setups. Another tracks macro crypto sentiment and fear/greed cycles. One monitors institutional whale order tape flow. One watches a setup bar by bar and tells you the moment to get in, and another sets your stop and your target before you do. And the Time Machine replays the setup 10,000 times using Monte Carlo simulation from recent 5-minute candles, giving you honest statistical odds before risking capital.
+
+And no trade goes through until you say yes. Nothing in this pack can place an order on its own. Paper trading is the default.
 
 ---
 
-## The 11 Crypto Skills
+## Install
+
+Paste this into Claude:
+
+```
+https://github.com/Yashaswirai/crypto-trader-skill
+
+install skill
+```
+
+Or as a plugin, in Claude Code:
+
+```
+/plugin marketplace add Yashaswirai/crypto-trader-skill
+/plugin install crypto-trader-skill@crypto-trader-skill
+```
+
+Claude Code namespaces plugin skills, so installed as a plugin they show up as
+`/crypto-trader-skill:crypto-scanner` and so on. Copy the folders instead if you want
+plain `/crypto-scanner`:
+
+```bash
+git clone https://github.com/Yashaswirai/crypto-trader-skill.git
+cp -r crypto-trader-skill/crypto-* ~/.claude/skills/
+```
+
+Or run the self-installer:
+
+```bash
+python3 crypto-trader-skill/install.py
+```
+
+Project-local instead of global: copy the same folders into your repo's
+`.claude/skills/` or `.agents/skills/`:
+
+```bash
+python3 crypto-trader-skill/install.py --local
+# or
+python3 crypto-trader-skill/install.py --agents
+```
+
+No Claude Code at all? Paste any single `SKILL.md` at the top of a chat and it runs as a mode. You lose the Python tools, but the method works.
+
+The tools need Python 3.8 or newer. Zero pip packages required (100% standard library).
+
+---
+
+## The eleven
 
 | Command | Skill | Responsibility |
 | :--- | :--- | :--- |
@@ -34,38 +75,91 @@ Human-in-the-loop safety is enforced across the entire pipeline:
 
 ---
 
-## Typical Trading Workflow
+## How to use it
+
+Everything lands in a `crypto-trader/` folder in your project, and each skill reads what the last one wrote:
 
 ```text
-1. /crypto-scanner daily               -> Discovers high-momentum setups (crypto-trader/watchlist.json)
-2. /crypto-news watchlist              -> Checks macro Fear & Greed sentiment regime
-3. /crypto-whale scan BTCUSDT          -> Verifies institutional whale order-flow delta
-4. /crypto-entry check BTCUSDT         -> Confirms completed bar close above breakout level
-5. /crypto-exit plan                   -> Sets ATR stop-loss and 2R take-profit (crypto-trader/plan.json)
-6. /crypto-timemachine run             -> Replays 10,000 simulations to verify statistical edge
-7. /crypto-budget --budget 10000       -> Sizes fractional quantity to max loss limit (crypto-trader/orders.json)
-8. /crypto-risk                        -> Audits order against risk ceiling (crypto-trader/state/risk.json)
-9. /crypto-broker show                 -> Displays approved ticket card; executes paper fill upon approval
+scanner -> news -> whale -> entry -> exit -> timemachine -> budget -> risk -> broker   (one trade)
+alerts: stop, target, funding settlement, session opens                                (while open)
+news / analyst / whale                                                                  (on demand)
+```
+
+### Complete Trade Walkthrough
+
+1. **`/crypto-scanner`** finds liquid breakout candidates:
+   ```bash
+   python3 "${CLAUDE_SKILL_DIR}/scan.py" daily
+   ```
+   Writes `crypto-trader/watchlist.json`.
+
+2. **`/crypto-news`** checks current sentiment regime:
+   ```bash
+   python3 "${CLAUDE_SKILL_DIR}/news.py" watchlist
+   ```
+   Ensures the market is not in Extreme Fear trap conditions.
+
+3. **`/crypto-whale`** verifies smart money flow:
+   ```bash
+   python3 "${CLAUDE_SKILL_DIR}/whale.py" scan BTCUSDT
+   ```
+   Confirms net institutional buyer demand.
+
+4. **`/crypto-entry`** monitors price bar-by-bar:
+   ```bash
+   python3 "${CLAUDE_SKILL_DIR}/entry.py" check BTCUSDT --level 80500 --interval 5m
+   ```
+   Triggers only when a bar **closes** above the level. Writes `crypto-trader/entry.json`.
+
+5. **`/crypto-exit`** plans the brackets:
+   ```bash
+   python3 "${CLAUDE_SKILL_DIR}/exit.py" plan --stop atr:1.5 --target 2R
+   ```
+   Writes `crypto-trader/plan.json`.
+
+6. **`/crypto-timemachine`** stress-tests the odds:
+   ```bash
+   python3 "${CLAUDE_SKILL_DIR}/timemachine.py" run
+   ```
+   Replays 10,000 Monte Carlo paths using the token's recent 5-minute volatility to calculate win/loss probabilities and mathematical expectancy in R.
+
+7. **`/crypto-budget`** sizes the position:
+   ```bash
+   python3 "${CLAUDE_SKILL_DIR}/size.py" --budget 10000 --max-loss 100 --write
+   ```
+   Rounds fractional lots to the exchange step size. Writes `crypto-trader/orders.json`.
+
+8. **`/crypto-risk`** audits safety rules:
+   ```bash
+   python3 "${CLAUDE_SKILL_DIR}/check.py"
+   ```
+   Issues a cryptographic PASS or BLOCK verdict to `crypto-trader/state/risk.json`.
+
+9. **`/crypto-broker`** formats ticket and simulates fill:
+   ```bash
+   python3 "${CLAUDE_SKILL_DIR}/ticket.py" show
+   python3 "${CLAUDE_SKILL_DIR}/ticket.py" paper --confirm "yes"
+   ```
+   Displays position in `crypto-trader/portfolio.json`.
+
+10. **`/crypto-alerts`** rings when prices or clocks hit:
+    ```bash
+    python3 "${CLAUDE_SKILL_DIR}/alerts.py" plan
+    python3 "${CLAUDE_SKILL_DIR}/alerts.py" sessions
+    ```
+
+---
+
+## Running Tests
+
+All tests run completely offline with zero external network or pip dependencies:
+
+```bash
+python3 -m unittest discover -s tests -p "test_*.py"
 ```
 
 ---
 
-## Installation
+## Safety & Disclaimer
 
-### In Antigravity / Claude Code:
-The skills are located under `.agents/skills/crypto-*`. They are automatically discovered and loaded on demand.
-
-### Standalone CLI:
-Run any script directly using standard Python 3.8+:
-```bash
-python3 crypto-scanner/scan.py daily
-python3 crypto-news/news.py fng
-python3 crypto-timemachine/timemachine.py run
-python3 tests/test_crypto_suite.py
-```
-
-### Running Tests:
-```bash
-python3 tests/test_crypto_suite.py
-```
-All 11 unit and regression tests run completely offline with zero external dependencies.
+Not financial advice. Cryptocurrency trading involves substantial risk of financial loss. These skills are automated analytical tools designed for educational and paper-trading purposes. Always conduct independent research and maintain strict risk parameters before trading live assets.

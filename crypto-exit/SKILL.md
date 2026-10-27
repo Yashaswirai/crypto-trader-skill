@@ -15,18 +15,20 @@ In crypto, volatility regimes can shift rapidly; calculating stops using ATR or
 explicit percentage floors prevents setting stops that are too tight to clear
 exchange fee hurdles.
 
+`${CLAUDE_SKILL_DIR}` below is this skill's folder (where this SKILL.md lives).
+
 ```bash
 # Plan exit from the active crypto-trader/entry.json
-python3 crypto-exit/exit.py plan --stop pct:2.0 --target 2R
+python3 "${CLAUDE_SKILL_DIR}/exit.py" plan --stop pct:2.0 --target 2R
 
 # Use dynamic 14-bar ATR volatility stop
-python3 crypto-exit/exit.py plan --symbol BTCUSDT --entry 80000 --stop atr:1.5 --target 2.5R
+python3 "${CLAUDE_SKILL_DIR}/exit.py" plan --symbol BTCUSDT --entry 80000 --stop atr:1.5 --target 2.5R
 
 # Plan with fixed price coordinates
-python3 crypto-exit/exit.py plan --symbol SOLUSDT --entry 180 --stop price:174.50 --target price:195.00
+python3 "${CLAUDE_SKILL_DIR}/exit.py" plan --symbol SOLUSDT --entry 180 --stop price:174.50 --target price:195.00
 
 # View current active plan
-python3 crypto-exit/exit.py show
+python3 "${CLAUDE_SKILL_DIR}/exit.py" show
 ```
 
 Outputs:

@@ -1,0 +1,14 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Local runtime directories
+crypto-trader/
+.cache/
+.env
+.venv
+env/
+venv/

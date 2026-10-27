@@ -15,13 +15,15 @@ While stock analysis focuses on quarterly 10-Q SEC reports, crypto fundamental e
 - **Liquidity Turnover**: Identifying whether token volume supports sizable position entries.
 - **Funding Rates & Open Interest**: Evaluating whether price moves are spot-driven or leveraged perp squeezes.
 
+`${CLAUDE_SKILL_DIR}` below is this skill's folder (where this SKILL.md lives).
+
 ```bash
 # Analyze tokenomics and dilution risk
-python3 crypto-analyst/analyst.py check bitcoin
+python3 "${CLAUDE_SKILL_DIR}/analyst.py" check bitcoin
 
 # Analyze Solana tokenomics
-python3 crypto-analyst/analyst.py check solana
+python3 "${CLAUDE_SKILL_DIR}/analyst.py" check solana
 
 # Check live perpetual funding rate and market bias
-python3 crypto-analyst/analyst.py funding BTCUSDT
+python3 "${CLAUDE_SKILL_DIR}/analyst.py" funding BTCUSDT
 ```

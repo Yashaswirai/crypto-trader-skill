@@ -1,22 +1,26 @@
 {
   "name": "crypto-trader-skill",
+  "description": "11 Claude skills for crypto day trading: scan thousands of charts, track breaking sentiment, time every entry and exit, and replay every outcome before you risk a dollar.",
   "version": "1.0.0",
-  "description": "11 modular AI assistant skills for cryptocurrency market analysis, whale tracking, position sizing, and risk management.",
   "author": {
-    "name": "Crypto Trader Skill Contributors"
+    "name": "Yashaswi Rai",
+    "url": "https://github.com/Yashaswirai"
   },
+  "homepage": "https://github.com/Yashaswirai/crypto-trader-skill",
+  "repository": "https://github.com/Yashaswirai/crypto-trader-skill",
   "license": "MIT",
-  "skills": [
-    "./crypto-scanner",
-    "./crypto-news",
-    "./crypto-entry",
-    "./crypto-exit",
-    "./crypto-timemachine",
-    "./crypto-budget",
-    "./crypto-risk",
-    "./crypto-broker",
-    "./crypto-alerts",
-    "./crypto-analyst",
-    "./crypto-whale"
-  ]
+  "keywords": [
+    "claude-code",
+    "claude-skills",
+    "crypto-trading",
+    "bitcoin",
+    "ethereum",
+    "solana",
+    "altcoins",
+    "whale-tracking",
+    "backtesting",
+    "risk-management",
+    "paper-trading"
+  ],
+  "skills": "./"
 }

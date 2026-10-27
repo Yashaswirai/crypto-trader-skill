@@ -14,16 +14,18 @@ The Crypto News and Sentiment Monitor tracks market psychology and sentiment reg
 In crypto, market sentiment strongly dictates whether breakout setups follow through
 (Greed/Extreme Greed) or form liquidity traps (Fear/Extreme Fear).
 
+`${CLAUDE_SKILL_DIR}` below is this skill's folder (where this SKILL.md lives).
+
 ```bash
 # Check current Crypto Fear & Greed Index
-python3 crypto-news/news.py fng
+python3 "${CLAUDE_SKILL_DIR}/news.py" fng
 
 # View 14-day sentiment trend
-python3 crypto-news/news.py fng --history 14
+python3 "${CLAUDE_SKILL_DIR}/news.py" fng --history 14
 
 # Check sentiment and catalysts for symbols in the active watchlist
-python3 crypto-news/news.py watchlist
+python3 "${CLAUDE_SKILL_DIR}/news.py" watchlist
 
 # Check specific tokens
-python3 crypto-news/news.py check BTCUSDT,SOLUSDT
+python3 "${CLAUDE_SKILL_DIR}/news.py" check BTCUSDT,SOLUSDT
 ```

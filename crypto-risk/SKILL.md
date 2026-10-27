@@ -14,15 +14,17 @@ The Risk Guardian acts as a firewall preventing impulsive trades and catastrophi
 Every trade must be checked and receive an explicit PASS verdict before the execution
 broker can display an active order ticket.
 
+`${CLAUDE_SKILL_DIR}` below is this skill's folder (where this SKILL.md lives).
+
 ```bash
 # Check current proposed order
-python3 crypto-risk/check.py
+python3 "${CLAUDE_SKILL_DIR}/check.py"
 
 # Perform dry-run check without updating state
-python3 crypto-risk/check.py --no-write
+python3 "${CLAUDE_SKILL_DIR}/check.py" --no-write
 
 # Output structured JSON verdict
-python3 crypto-risk/check.py --json
+python3 "${CLAUDE_SKILL_DIR}/check.py" --json
 ```
 
 Outputs:

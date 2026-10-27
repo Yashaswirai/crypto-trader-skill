@@ -15,18 +15,20 @@ In crypto, where assets can fluctuate dramatically, the sizer rounds fractional 
 down to safe exchange step-sizes (e.g. 0.0001 BTC or 0.01 SOL) and ensures that the loss
 at your stop never exceeds your authorized threshold.
 
+`${CLAUDE_SKILL_DIR}` below is this skill's folder (where this SKILL.md lives).
+
 ```bash
 # Size trade from active plan
-python3 crypto-budget/size.py
+python3 "${CLAUDE_SKILL_DIR}/size.py"
 
 # Specify customized budget and max loss
-python3 crypto-budget/size.py --budget 10000 --max-loss 100
+python3 "${CLAUDE_SKILL_DIR}/size.py" --budget 10000 --max-loss 100
 
 # Size a limit order bracket
-python3 crypto-budget/size.py --limit 80100 --write
+python3 "${CLAUDE_SKILL_DIR}/size.py" --limit 80100 --write
 
 # Size a 2x leverage perpetual contract
-python3 crypto-budget/size.py --leverage 2 --write
+python3 "${CLAUDE_SKILL_DIR}/size.py" --leverage 2 --write
 ```
 
 Outputs:

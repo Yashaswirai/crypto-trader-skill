@@ -1,8 +1,18 @@
 {
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "crypto-trader-skill",
-  "displayName": "Crypto Trader Skill",
-  "version": "1.0.0",
-  "description": "11 modular skills for cryptocurrency day trading: 24/7 chart scanning, Fear & Greed sentiment, whale flow tracking, fractional position sizing, and risk enforcement.",
-  "category": "Trading & Finance",
-  "tags": ["crypto", "bitcoin", "ethereum", "trading", "risk-management", "whale-tracking", "binance"]
+  "description": "The Crypto Trader skill pack for Claude and AI Agents: 11 modular crypto trading skills",
+  "owner": {
+    "name": "Yashaswi Rai",
+    "url": "https://github.com/Yashaswirai"
+  },
+  "plugins": [
+    {
+      "name": "crypto-trader-skill",
+      "description": "Eleven Claude skills for crypto trading: a 24/7 chart scanner, a Fear & Greed sentiment monitor, an entry timer, an exit planner, a Monte Carlo time machine that replays 10,000 sessions, a risk guardian, a fractional lot position sizer, a broker simulator and ticket builder, multi-session price alerts, a tokenomics analyst, and an on-chain whale flow tracker.",
+      "source": "./",
+      "category": "productivity",
+      "homepage": "https://github.com/Yashaswirai/crypto-trader-skill"
+    }
+  ]
 }
