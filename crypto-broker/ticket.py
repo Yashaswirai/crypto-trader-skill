@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """Crypto Order Executor & Paper Simulator for crypto-broker.
-Displays human-in-the-loop approved tickets and handles paper trading simulation.
+Displays human-in-the-loop approved tickets, handles paper trading simulation,
+and connects to exchange live dispatchers (e.g. ZebPay).
 Standard library only. NEVER places live orders without explicit user confirmation.
 
     python3 ticket.py show                           # display approved ticket card
     python3 ticket.py paper --confirm "yes"          # execute paper simulation fill
     python3 ticket.py positions                      # view open paper positions & PnL
     python3 ticket.py payload                        # output Binance / CCXT REST payload
+    python3 ticket.py dispatch-zebpay --confirm "yes"# dispatch live order to ZebPay
 
 Safety:
   Refuses to execute or display any ticket that does not have a matching PASS verdict
@@ -46,6 +48,19 @@ def fetch_live_price(symbol):
     return None
 
 
+def compute_order_fingerprint(order):
+    """Deterministic SHA-256 fingerprint for order verification matching crypto-risk."""
+    canonical = (
+        f"{str(order.get('symbol', '')).upper()}:"
+        f"{str(order.get('side', '')).upper()}:"
+        f"{float(order.get('quantity', 0)):.8f}:"
+        f"{float(order.get('price', 0)):.8f}:"
+        f"{float(order.get('stop_loss_price', 0)):.8f}:"
+        f"{float(order.get('take_profit_price', 0)):.8f}"
+    )
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()[:16]
+
+
 def verify_risk_pass(order, state_risk_path):
     """Ensure order matches a PASS verdict recorded by crypto-risk."""
     if not os.path.exists(state_risk_path):
@@ -55,9 +70,8 @@ def verify_risk_pass(order, state_risk_path):
             v = json.load(f)
         if v.get("verdict") != "PASS":
             return False, f"Risk engine blocked this order: {v.get('rejections')}"
-        # Fingerprint match
-        canonical = f"{order.get('symbol')}:{order.get('side')}:{order.get('quantity')}:{order.get('price')}:{order.get('stop_loss_price')}:{order.get('take_profit_price')}"
-        expected_fp = hashlib.sha256(canonical.encode("utf-8")).hexdigest()[:16]
+
+        expected_fp = compute_order_fingerprint(order)
         if v.get("fingerprint") != expected_fp:
             return False, "Order was modified after risk check. Re-run crypto-risk."
         return True, "Risk check PASSED."
@@ -79,6 +93,7 @@ def record_broker_fill(order, state_broker_path, portfolio_path):
     fill_record = dict(order)
     fill_record["fill_time_utc"] = datetime.datetime.now(datetime.timezone.utc).isoformat()
     fill_record["fill_id"] = f"PAPER_{int(time.time())}"
+    fill_record["fingerprint"] = compute_order_fingerprint(order)
     history.append(fill_record)
 
     with open(state_broker_path, "w", encoding="utf-8") as f:
@@ -151,6 +166,18 @@ def main():
     # Subcommand: payload
     pay_p = subparsers.add_parser("payload", help="Generate Binance/CCXT REST payload")
     pay_p.add_argument("--orders", default=DEFAULT_ORDERS_PATH)
+    pay_p.add_argument("--state-risk", default=DEFAULT_STATE_RISK_PATH)
+
+    # Subcommand: dispatch-zebpay
+    zeb_p = subparsers.add_parser("dispatch-zebpay", help="Live order dispatch to ZebPay Spot REST API")
+    zeb_p.add_argument("--confirm", help="Must pass --confirm 'yes' to execute live order")
+    zeb_p.add_argument("--quote", default="INR", help="Target quote currency (INR or USDT)")
+    zeb_p.add_argument("--inr-rate", type=float, help="USD to INR rate for limit pricing")
+    zeb_p.add_argument("--dry-run", action="store_true", help="Simulate auth & payload without placing")
+    zeb_p.add_argument("--orders", default=DEFAULT_ORDERS_PATH)
+    zeb_p.add_argument("--state-risk", default=DEFAULT_STATE_RISK_PATH)
+    zeb_p.add_argument("--state-broker", default=DEFAULT_STATE_BROKER_PATH)
+    zeb_p.add_argument("--portfolio", default=DEFAULT_PORTFOLIO_PATH)
 
     args = parser.parse_args()
 
@@ -161,16 +188,16 @@ def main():
         with open(args.orders, "r", encoding="utf-8") as f:
             order = json.load(f)
 
-        if args.command == "payload":
-            print(json.dumps(build_exchange_payload(order), indent=2))
-            sys.exit(0)
-
-        ok, msg = verify_risk_pass(order, args.state_risk)
+        ok, msg = verify_risk_pass(order, getattr(args, "state_risk", DEFAULT_STATE_RISK_PATH))
         if not ok:
             print(f"Refusal: Order not verified for execution.\nReason: {msg}")
             sys.exit(1)
 
-        if args.command == "show":
+        if args.command == "payload":
+            print(json.dumps(build_exchange_payload(order), indent=2))
+            sys.exit(0)
+
+        elif args.command == "show":
             if getattr(args, "json", False):
                 print(json.dumps(order, indent=2))
             else:
@@ -178,14 +205,14 @@ def main():
                 print("             CRYPTO ORDER TICKET (READY)                 ")
                 print("==========================================================")
                 print(f"  Symbol:          {order['symbol']} ({order['side']})")
-                print(f"  Type:            {order['type']} (Leverage: {order['leverage']}x)")
+                print(f"  Type:            {order['type']} (Leverage: {order.get('leverage', 1)}x)")
                 print(f"  Quantity:        {order['quantity']} {order['symbol'].replace('USDT', '')}")
-                print(f"  Entry Price:     ${order['price']:<10.4f}")
-                print(f"  Stop Loss:       ${order['stop_loss_price']:<10.4f}")
-                print(f"  Take Profit:     ${order['take_profit_price']:<10.4f}")
-                print(f"  Notional Value:  ${order['notional_usd']:<10.2f}")
-                print(f"  Max Loss at Stop:${order['max_loss_usd']:<10.2f}")
-                print(f"  Reward to Risk:  {order['reward_to_risk']:.2f}R")
+                print(f"  Entry Price:     ${float(order['price']):<10.4f}")
+                print(f"  Stop Loss:       ${float(order['stop_loss_price']):<10.4f}")
+                print(f"  Take Profit:     ${float(order['take_profit_price']):<10.4f}")
+                print(f"  Notional Value:  ${float(order.get('notional_usd', 0)):<10.2f}")
+                print(f"  Max Loss at Stop:${float(order.get('max_loss_usd', 0)):<10.2f}")
+                print(f"  Reward to Risk:  {float(order.get('reward_to_risk', 0)):.2f}R")
                 print("----------------------------------------------------------")
                 print("  Mode:            PAPER TRADING (Default)")
                 print("  Safety:          Risk checks verified. Ready for confirmation.")
@@ -216,8 +243,32 @@ def main():
             sym = p["symbol"]
             cur = fetch_live_price(sym) or p["price"]
             pnl_usd = (cur - p["price"]) * p["quantity"] if p["side"] == "BUY" else (p["price"] - cur) * p["quantity"]
-            pnl_pct = (pnl_usd / p["notional_usd"]) * 100.0 if p["notional_usd"] > 0 else 0.0
+            pnl_pct = (pnl_usd / p["notional_usd"]) * 100.0 if p.get("notional_usd", 0) > 0 else 0.0
             print(f"  {sym:<10} Qty: {p['quantity']:<8} Entry: ${p['price']:<9.2f} Mark: ${cur:<9.2f} PnL: ${pnl_usd:>+7.2f} ({pnl_pct:>+6.2f}%)")
+
+    elif args.command == "dispatch-zebpay":
+        try:
+            from zebpay_dispatcher import execute_dispatcher
+        except ImportError:
+            import importlib.util
+            dispatcher_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "zebpay_dispatcher.py")
+            spec = importlib.util.spec_from_file_location("zebpay_dispatcher", dispatcher_path)
+            mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+            execute_dispatcher = mod.execute_dispatcher
+
+        cmd = "dry-run" if args.dry_run else "dispatch"
+        code = execute_dispatcher(
+            command=cmd,
+            orders_path=args.orders,
+            state_risk_path=args.state_risk,
+            state_broker_path=args.state_broker,
+            portfolio_path=args.portfolio,
+            quote=args.quote,
+            inr_rate=args.inr_rate,
+            confirm=getattr(args, "confirm", "") or "",
+        )
+        sys.exit(code)
 
 
 if __name__ == "__main__":
