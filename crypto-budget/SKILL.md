@@ -1,34 +1,30 @@
 ---
 name: crypto-budget
 description: >-
-  Crypto Position Sizer. Calculates whole and fractional crypto position sizes (BTC, ETH,
-  SOL, altcoins) matching exchange LOT_SIZE step filters. Sizes to the strictest of 4 limits:
-  max loss per trade, position cap %, max order USD, and cash buffer. Formats bracket
-  orders into crypto-trader/orders.json. Standard library Python, no network.
-argument-hint: "[--budget USD] [--max-loss USD] [--limit PRICE] [--leverage 1|2|5]"
+  Crypto Position Sizer. Calculates spot cash allocations (1x leverage, zero liquidation risk)
+  and leveraged futures positions (2x-20x leverage, initial margin, exact liquidation price,
+  safety buffer enforcement). Formats bracket orders into crypto-trader/orders.json.
+argument-hint: "[--budget USD] [--max-loss USD] [--limit PRICE] [--leverage 1|2|5|10]"
 ---
 
 # crypto-budget
 
-The Crypto Position Sizer prevents taking excessive risk on any individual trade.
-In crypto, where assets can fluctuate dramatically, the sizer rounds fractional quantities
-down to safe exchange step-sizes (e.g. 0.0001 BTC or 0.01 SOL) and ensures that the loss
-at your stop never exceeds your authorized threshold.
+The Position Sizer dynamically sizes trades depending on whether you are trading Spot or Futures.
 
 `${CLAUDE_SKILL_DIR}` below is this skill's folder (where this SKILL.md lives).
 
+### 1. Spot Trading (Long-Term 1x Asset Allocation)
+Sizes whole and fractional tokens matching exchange `LOT_SIZE` filters with **zero liquidation risk**:
 ```bash
-# Size trade from active plan
-python3 "${CLAUDE_SKILL_DIR}/size.py"
+# Size spot trade risking max $100 on $10,000 budget
+python3 "${CLAUDE_SKILL_DIR}/size.py" --budget 10000 --max-loss 100 --write
+```
 
-# Specify customized budget and max loss
-python3 "${CLAUDE_SKILL_DIR}/size.py" --budget 10000 --max-loss 100
-
-# Size a limit order bracket
-python3 "${CLAUDE_SKILL_DIR}/size.py" --limit 80100 --write
-
-# Size a 2x leverage perpetual contract
-python3 "${CLAUDE_SKILL_DIR}/size.py" --leverage 2 --write
+### 2. Futures Trading (Short-Term Leveraged Sizing)
+Calculates required initial margin, exact liquidation price, and enforces that your Stop-Loss triggers well before liquidation:
+```bash
+# Size 5x perpetual futures contract
+python3 "${CLAUDE_SKILL_DIR}/size.py" --budget 5000 --max-loss 50 --leverage 5 --write
 ```
 
 Outputs:

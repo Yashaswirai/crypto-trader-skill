@@ -35,6 +35,8 @@ import urllib.error
 import urllib.request
 
 DEFAULT_BASE_URL = "https://sapi.zebpay.com"
+DEFAULT_SPOT_URL = "https://sapi.zebpay.com"
+DEFAULT_FUTURES_URL = "https://futuresbe.zebpay.com"
 DEFAULT_ORDER_PATH = "/orders"
 FALLBACK_ORDER_PATH = "/v2/ex/orders"
 DEFAULT_ORDERS_PATH = "crypto-trader/orders.json"
@@ -279,9 +281,12 @@ def execute_dispatcher(
     quote: str = "INR",
     inr_rate: float = None,
     confirm: str = "",
-    base_url: str = DEFAULT_BASE_URL,
+    base_url: str = None,
     path: str = DEFAULT_ORDER_PATH,
+    market: str = "spot",
 ) -> int:
+    if not base_url:
+        base_url = DEFAULT_FUTURES_URL if market.lower() == "futures" else DEFAULT_SPOT_URL
     """Core dispatcher coordination function."""
     if not os.path.exists(orders_path):
         print(f"Error: Orders file '{orders_path}' not found.")
@@ -302,10 +307,11 @@ def execute_dispatcher(
     payload = build_zebpay_payload(order, quote_currency=quote, inr_rate=effective_inr)
 
     if command == "preview":
+        mkt_label = f"FUTURES PERPETUAL ({order.get('leverage', 1)}x)" if market.lower() == "futures" else "SPOT CASH"
         print("==========================================================")
         print("         ZEBPAY LIVE ORDER PREVIEW (VERIFIED)             ")
         print("==========================================================")
-        print(f"  Target Market:   {payload['symbol']}")
+        print(f"  Target Market:   {payload['symbol']} ({mkt_label})")
         print(f"  Action:          {payload['side']} {payload['quantity']}")
         print(f"  Order Type:      {payload['type']}")
         if "price" in payload:
@@ -421,6 +427,7 @@ def main():
     prev_p.add_argument("--state-risk", default=DEFAULT_STATE_RISK_PATH)
     prev_p.add_argument("--quote", default="INR", help="Target quote currency (INR or USDT)")
     prev_p.add_argument("--inr-rate", type=float, help="USD to INR rate for limit price calculation")
+    prev_p.add_argument("--market", choices=["spot", "futures"], default="spot", help="ZebPay market (spot or futures)")
 
     # Subcommand: dry-run
     dry_p = subparsers.add_parser("dry-run", help="Validate auth signatures & schema without sending")
@@ -438,8 +445,9 @@ def main():
     disp_p.add_argument("--portfolio", default=DEFAULT_PORTFOLIO_PATH)
     disp_p.add_argument("--quote", default="INR")
     disp_p.add_argument("--inr-rate", type=float)
-    disp_p.add_argument("--base-url", default=DEFAULT_BASE_URL)
+    disp_p.add_argument("--base-url", default=None)
     disp_p.add_argument("--path", default=DEFAULT_ORDER_PATH)
+    disp_p.add_argument("--market", choices=["spot", "futures"], default="spot", help="ZebPay market (spot or futures)")
 
     args = parser.parse_args()
 
@@ -452,8 +460,9 @@ def main():
         quote=getattr(args, "quote", "INR"),
         inr_rate=getattr(args, "inr_rate", None),
         confirm=getattr(args, "confirm", ""),
-        base_url=getattr(args, "base_url", DEFAULT_BASE_URL),
+        base_url=getattr(args, "base_url", None),
         path=getattr(args, "path", DEFAULT_ORDER_PATH),
+        market=getattr(args, "market", "spot"),
     )
     sys.exit(code)
 

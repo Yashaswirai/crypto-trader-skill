@@ -163,6 +163,82 @@ def scan_daily_setups(symbols=None, min_volume_usd=DEFAULT_MIN_VOLUME_USD, offli
     return hits
 
 
+def scan_spot_candidates(symbols=None, min_volume_usd=DEFAULT_MIN_VOLUME_USD, offline=None):
+    """Scan for Long-Term Spot Swing & Macro Accumulation candidates."""
+    universe = get_universe(min_volume_usd=min_volume_usd, offline=offline)
+    if symbols:
+        sym_set = set(symbols.split(","))
+        universe = [x for x in universe if x["symbol"] in sym_set]
+
+    hits = []
+    for item in universe:
+        sym = item["symbol"]
+        price = item["price"]
+        high = item["high_24h"]
+        low = item["low_24h"]
+        chg = item["change_24h"]
+        vol = item["volume_usd"]
+
+        # Spot Swing criteria: steady volume, low-to-moderate daily change, healthy consolidation
+        if -3.0 <= chg <= 6.0 and vol >= min_volume_usd and high > 0:
+            range_pct = (high - low) / high
+            if range_pct <= 0.06:
+                hits.append({
+                    "symbol": sym,
+                    "market": "SPOT CASH",
+                    "horizon": "LONG_TERM (Multi-Day to Weeks)",
+                    "setup": "spot_swing_consolidation",
+                    "price": price,
+                    "volume_usd": vol,
+                    "reason": f"Tight {range_pct * 100:.1f}% base with ${vol:,.0f} volume; zero liquidation risk",
+                    "timestamp_utc": datetime.datetime.now(datetime.timezone.utc).isoformat()
+                })
+    return hits
+
+
+def scan_futures_candidates(symbols=None, min_volume_usd=DEFAULT_MIN_VOLUME_USD, offline=None):
+    """Scan for Short-Term Futures Setups (both LONG volume surges and SHORT breakdowns)."""
+    universe = get_universe(min_volume_usd=min_volume_usd, offline=offline)
+    if symbols:
+        sym_set = set(symbols.split(","))
+        universe = [x for x in universe if x["symbol"] in sym_set]
+
+    hits = []
+    for item in universe:
+        sym = item["symbol"]
+        price = item["price"]
+        chg = item["change_24h"]
+        vol = item["volume_usd"]
+
+        # Long Momentum Scalp
+        if chg >= 6.0 and vol >= min_volume_usd * 1.5:
+            hits.append({
+                "symbol": sym,
+                "market": "FUTURES PERPETUAL",
+                "horizon": "SHORT_TERM (Scalp / 1h - 8h)",
+                "bias": "LONG",
+                "setup": "futures_momentum_long",
+                "price": price,
+                "volume_usd": vol,
+                "reason": f"24h surge +{chg:.2f}% on ${vol:,.0f} volume; tight trailing stop required",
+                "timestamp_utc": datetime.datetime.now(datetime.timezone.utc).isoformat()
+            })
+        # Short Breakdown Scalp
+        elif chg <= -6.0 and vol >= min_volume_usd * 1.5:
+            hits.append({
+                "symbol": sym,
+                "market": "FUTURES PERPETUAL",
+                "horizon": "SHORT_TERM (Scalp / 1h - 8h)",
+                "bias": "SHORT",
+                "setup": "futures_breakdown_short",
+                "price": price,
+                "volume_usd": vol,
+                "reason": f"24h dump {chg:.2f}% on ${vol:,.0f} volume; flush continuation setup",
+                "timestamp_utc": datetime.datetime.now(datetime.timezone.utc).isoformat()
+            })
+    return hits
+
+
 def scan_session_breakouts(session_name="london", symbols=None, offline=None):
     """Scan for Session Range Breakouts (SRB).
     Asian Session: 00:00 - 08:00 UTC
@@ -228,6 +304,24 @@ def main():
     daily_parser.add_argument("--json", action="store_true")
     daily_parser.add_argument("--offline")
 
+    # Subcommand: spot
+    spot_parser = subparsers.add_parser("spot", help="Scan Long-Term Spot Swing candidates (Zero liquidation, steady bases)")
+    spot_parser.add_argument("--symbols")
+    spot_parser.add_argument("--min-volume", type=float, default=DEFAULT_MIN_VOLUME_USD)
+    spot_parser.add_argument("--write", action="store_true", default=True)
+    spot_parser.add_argument("--out", default=DEFAULT_WATCHLIST_PATH)
+    spot_parser.add_argument("--json", action="store_true")
+    spot_parser.add_argument("--offline")
+
+    # Subcommand: futures
+    fut_parser = subparsers.add_parser("futures", help="Scan Short-Term Futures candidates (Long surges & Short breakdowns)")
+    fut_parser.add_argument("--symbols")
+    fut_parser.add_argument("--min-volume", type=float, default=DEFAULT_MIN_VOLUME_USD)
+    fut_parser.add_argument("--write", action="store_true", default=True)
+    fut_parser.add_argument("--out", default=DEFAULT_WATCHLIST_PATH)
+    fut_parser.add_argument("--json", action="store_true")
+    fut_parser.add_argument("--offline")
+
     # Subcommand: session
     sess_parser = subparsers.add_parser("session", help="Scan session range breakouts (SRB)")
     sess_parser.add_argument("--session", choices=["asian", "london", "ny"], default="london")
@@ -251,9 +345,13 @@ def main():
             print(f"  {u['symbol']:<12} Price: ${u['price']:<10.4f} 24h Vol: ${u['volume_usd']:>12,.0f} ({u['change_24h']:+.2f}%)")
         sys.exit(0 if universe else 1)
 
-    elif args.command in ("daily", "session"):
+    elif args.command in ("daily", "session", "spot", "futures"):
         if args.command == "daily":
             hits = scan_daily_setups(symbols=args.symbols, min_volume_usd=args.min_volume, offline=args.offline)
+        elif args.command == "spot":
+            hits = scan_spot_candidates(symbols=args.symbols, min_volume_usd=args.min_volume, offline=args.offline)
+        elif args.command == "futures":
+            hits = scan_futures_candidates(symbols=args.symbols, min_volume_usd=args.min_volume, offline=args.offline)
         else:
             hits = scan_session_breakouts(session_name=args.session, symbols=args.symbols, offline=args.offline)
 

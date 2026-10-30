@@ -117,6 +117,29 @@ def size_position(plan, config, limit_price=None, leverage=1):
             f"Sized order (${notional_usd:.2f}) is below minimum exchange limit (${min_order_usd:.2f})."
         )
 
+    # Differentiate Spot (Long-Term) vs Futures (Short-Term Leverage)
+    if leverage > 1:
+        market_type = "FUTURES"
+        horizon = "SHORT_TERM (Intraday / Leverage: 1h - 8h)"
+        margin_usd = notional_usd / Decimal(str(leverage))
+        maint_margin = Decimal("0.005")
+        if side == "LONG":
+            liq_price = entry * (Decimal("1") - (Decimal("1") / Decimal(str(leverage))) + maint_margin)
+            liq_buffer = ((entry - liq_price) / entry) * Decimal("100")
+            if stop <= liq_price:
+                raise ValueError(f"Dangerous Futures Setup: Stop-loss (${stop:.2f}) is below liquidation price (${liq_price:.2f})!")
+        else:
+            liq_price = entry * (Decimal("1") + (Decimal("1") / Decimal(str(leverage))) - maint_margin)
+            liq_buffer = ((liq_price - entry) / entry) * Decimal("100")
+            if stop >= liq_price:
+                raise ValueError(f"Dangerous Futures Setup: Stop-loss (${stop:.2f}) is above liquidation price (${liq_price:.2f})!")
+    else:
+        market_type = "SPOT"
+        horizon = "LONG_TERM (Spot Asset / Multi-Day Swing)"
+        margin_usd = notional_usd
+        liq_price = None
+        liq_buffer = None
+
     order = {
         "symbol": plan["symbol"],
         "side": "BUY" if side == "LONG" else "SELL",
@@ -129,6 +152,11 @@ def size_position(plan, config, limit_price=None, leverage=1):
         "max_loss_usd": float(round(actual_risk_usd, 2)),
         "limiting_factor": limiting_factor,
         "leverage": leverage,
+        "market_type": market_type,
+        "horizon": horizon,
+        "margin_usd": float(round(margin_usd, 2)),
+        "liquidation_price": float(round(liq_price, 4)) if liq_price else None,
+        "liquidation_buffer_pct": float(round(liq_buffer, 2)) if liq_buffer else None,
         "reward_to_risk": plan.get("reward_to_risk", 2.0),
         "created_at_utc": datetime.datetime.now(datetime.timezone.utc).isoformat()
     }
